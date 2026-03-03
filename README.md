@@ -29,6 +29,26 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Whop configuration
+
+This project requires a Whop company API key and your company ID in order to create embedded checkout configurations.
+
+- `WHOP_API_KEY` **must be kept secret** and only available on the server.
+- `WHOP_COMPANY_ID` is also used by the server. You may expose it to the browser via a `NEXT_PUBLIC_` prefixed variable _if_ you need the ID client‑side, but the server-side code uses the unprefixed version.
+
+Add the following variables to your environment (`.env.local` in development):
+
+```env
+WHOP_API_KEY=apik_...
+WHOP_COMPANY_ID=biz_...
+# (optional) NEXT_PUBLIC_WHOP_COMPANY_ID=biz_... if you need the ID on the client
+```
+
+Ensure you restart the dev server after editing `.env.local` so the new values are picked up.
+
+You can obtain these values from your Whop dashboard under **Settings → API**.
+
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
