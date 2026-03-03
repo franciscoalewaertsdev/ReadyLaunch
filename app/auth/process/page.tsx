@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// Force dynamic rendering since this page depends on URL params
+export const dynamic = 'force-dynamic';
+
 const STORAGE_KEY = 'whop_oauth_pkce';
 const CLIENT_ID = process.env.NEXT_PUBLIC_WHOP_CLIENT_ID;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI || 'http://localhost:3000/api/auth/callback';
