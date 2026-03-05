@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Check, ChevronRight } from 'lucide-react';
 
-export default function CheckoutCompletePage() {
+function CheckoutCompleteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -87,5 +87,24 @@ export default function CheckoutCompletePage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutCompletePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0e0718] flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block mb-4">
+              <div className="w-12 h-12 border-4 border-[#a5b4fc] border-t-[#f59e0b] rounded-full animate-spin" />
+            </div>
+            <p className="text-white text-lg font-medium">Processing payment...</p>
+          </div>
+        </div>
+      }
+    >
+      <CheckoutCompleteContent />
+    </Suspense>
   );
 }
