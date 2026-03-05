@@ -9,10 +9,10 @@ export default function ReadyLaunchApp() {
   const [step, setStep] = useState(0); 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState('residential');
-  const [selectedState, setSelectedState] = useState('Wyoming');
-  const [selectedPackage, setSelectedPackage] = useState('Credit Accelerator');
-  const [companyName, setCompanyName] = useState('Readylaunch LLC');
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
@@ -137,6 +137,25 @@ export default function ReadyLaunchApp() {
     setStep(s => s - 1);
   };
   const goToStep = (s: number) => setStep(s);
+
+  const canProceedToNextStep = useMemo(() => {
+    if (step === 2) return selectedCountry.trim().length > 0;
+    if (step === 3) return companyName.trim().length > 0;
+    if (step === 4) return selectedState.trim().length > 0;
+    if (step === 5) return selectedPackage.trim().length > 0;
+    if (step === 6) return selectedAddress.trim().length > 0;
+    return true;
+  }, [step, selectedCountry, companyName, selectedState, selectedPackage, selectedAddress]);
+
+  const packagePrice = selectedPackage === 'Premium+' ? 850 : selectedPackage === 'Credit Accelerator' ? 1495 : 0;
+  const addressPrice = selectedAddress === 'commercial'
+    ? (isYearly ? 350 : 31)
+    : selectedAddress === 'residential'
+      ? (isYearly ? 1490 : 127)
+      : selectedAddress === 'own-setup'
+        ? 0
+        : 0;
+  const totalPrice = packagePrice + addressPrice;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -365,7 +384,7 @@ export default function ReadyLaunchApp() {
             <div className="max-w-2xl w-full flex flex-col items-center">
               <h2 className="text-[40px] font-medium mb-12 text-center italic tracking-tight">Choose your desired company name</h2>
               <div className="w-full max-w-lg mb-8">
-                <input autoFocus value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" placeholder="Acme Solutions LLC" className="w-full bg-[#0c0c14] border border-zinc-800 p-5 rounded-2xl text-zinc-300 font-medium focus:border-[#f59e0b]/50 outline-none" />
+                <input autoFocus value={companyName} onChange={(e) => setCompanyName(e.target.value)} type="text" placeholder="Readylaunch LLC" className="w-full bg-[#0c0c14] border border-zinc-800 p-5 rounded-2xl text-zinc-300 font-medium focus:border-[#f59e0b]/50 outline-none" />
               </div>
               <div className="w-full max-w-lg bg-[#0c0c14]/50 border border-zinc-800/60 p-8 rounded-[32px] flex flex-col gap-3">
                 <div className="flex gap-2 items-center text-white font-bold text-sm italic tracking-tight"><Lightbulb size={18} /><span>Pro Tip:</span></div>
@@ -505,10 +524,10 @@ export default function ReadyLaunchApp() {
                 <span className={isYearly ? 'text-white' : 'text-zinc-600'}>Yearly</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl items-stretch">
                 
                 {/* OPCIÓN COMERCIAL */}
-                <div onClick={() => setSelectedAddress('commercial')} className={`p-8 rounded-[32px] border transition-all cursor-pointer flex flex-col ${selectedAddress === 'commercial' ? 'bg-[#1a1a1a] border-zinc-700 shadow-xl' : 'bg-[#111111] border-zinc-800/40 opacity-70'}`}>
+                <div onClick={() => setSelectedAddress('commercial')} className={`p-8 rounded-[32px] border transition-all cursor-pointer flex flex-col h-full ${selectedAddress === 'commercial' ? 'bg-[#1a1a1a] border-zinc-700 shadow-xl' : 'bg-[#111111] border-zinc-800/40 opacity-70'}`}>
                   <div className="flex justify-center mb-6">
                     <div className="bg-[#2a2a2a] border border-zinc-700 px-3 py-1 rounded-full flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
@@ -517,12 +536,15 @@ export default function ReadyLaunchApp() {
                   </div>
                   <div className="text-center mb-8">
                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Virtual Address</p>
-                    <p className="text-6xl font-black italic tracking-tighter text-white">$31<span className="text-2xl font-bold text-zinc-500">/mo</span></p>
+                    <p className="text-6xl font-black italic tracking-tighter text-white">
+                      ${isYearly ? '350' : '31'}
+                      <span className="text-2xl font-bold text-zinc-500">{isYearly ? '/yr' : '/mo'}</span>
+                    </p>
                     <p className="text-white text-xl font-black uppercase italic mt-2">Commercial</p>
-                    <p className="text-zinc-600 text-[10px] font-bold mt-1 uppercase">Billed Monthly</p>
+                    <p className="text-zinc-600 text-[10px] font-bold mt-1 uppercase">{isYearly ? 'Billed Yearly' : 'Billed Monthly'}</p>
                   </div>
                   <div className="h-[1px] bg-zinc-800/50 w-full mb-8" />
-                  <div className="space-y-4 mb-10">
+                  <div className="flex-1 space-y-4 mb-10">
                     <div className="flex items-start gap-3 text-[13px] font-medium text-white">
                       <Check size={16} className="text-green-500 shrink-0" strokeWidth={3} />
                       <span>Open virtual bank accounts only</span>
@@ -551,15 +573,18 @@ export default function ReadyLaunchApp() {
                 </div>
 
                 {/* OPCIÓN RESIDENCIAL */}
-                <div onClick={() => setSelectedAddress('residential')} className={`p-8 rounded-[32px] border transition-all cursor-pointer flex flex-col relative ${selectedAddress === 'residential' ? 'bg-[#151205] border-[#f59e0b]/60 shadow-2xl' : 'bg-[#111111] border-zinc-800/40 opacity-70'}`}>
+                <div onClick={() => setSelectedAddress('residential')} className={`p-8 rounded-[32px] border transition-all cursor-pointer flex flex-col relative h-full ${selectedAddress === 'residential' ? 'bg-[#151205] border-[#f59e0b]/60 shadow-2xl' : 'bg-[#111111] border-zinc-800/40 opacity-70'}`}>
                   <div className="text-center mb-8 mt-4">
                     <p className="text-[#f59e0b] text-[10px] font-black uppercase tracking-widest mb-1">Premium Physical Address</p>
-                    <p className="text-6xl font-black italic tracking-tighter text-white">ONLY $127<span className="text-2xl font-bold text-zinc-500">/mo</span></p>
+                    <p className="text-6xl font-black italic tracking-tighter text-white">
+                      ONLY ${isYearly ? '1490' : '127'}
+                      <span className="text-2xl font-bold text-zinc-500">{isYearly ? '/yr' : '/mo'}</span>
+                    </p>
                     <p className="text-white text-xl font-black uppercase italic mt-2">Residential</p>
-                    <p className="text-zinc-600 text-[10px] font-bold mt-1 uppercase">Billed Monthly</p>
+                    <p className="text-zinc-600 text-[10px] font-bold mt-1 uppercase">{isYearly ? 'Billed Yearly' : 'Billed Monthly'}</p>
                   </div>
                   <div className="h-[1px] bg-[#f59e0b]/20 w-full mb-8" />
-                  <div className="space-y-4 mb-10">
+                  <div className="flex-1 space-y-4 mb-10">
                     <div className="flex items-start gap-3 text-[13px] font-medium text-white">
                       <Check size={16} className="text-green-500 shrink-0" strokeWidth={3} />
                       <span>Open Virtual bank accounts</span>
@@ -588,7 +613,7 @@ export default function ReadyLaunchApp() {
                 </div>
               </div>
 
-              <button className="mt-10 text-zinc-500 text-[11px] font-medium underline underline-offset-4 hover:text-zinc-300">
+              <button onClick={() => { setSelectedAddress('own-setup'); next(); }} className="mt-10 text-zinc-500 text-[11px] font-medium underline underline-offset-4 hover:text-zinc-300">
                 I'll take my chances, I'll set this up myself. I acknowledge that I need to set this up before I can set up my LLC
               </button>
             </div>
@@ -605,26 +630,37 @@ export default function ReadyLaunchApp() {
                   <button onClick={() => goToStep(3)} className="w-10 h-10 rounded-xl bg-zinc-800/50 flex items-center justify-center text-zinc-400 hover:bg-zinc-700 transition-all"><Pencil size={18} /></button>
                 </div>
                 <div className="bg-[#11111d] border border-zinc-800/50 p-6 rounded-[24px] flex justify-between items-center">
-                  <div><p className="text-zinc-600 text-[11px] font-bold uppercase tracking-wider mb-1">Registration State:</p><p className="text-xl font-bold italic">{selectedState}</p></div>
+                  <div><p className="text-zinc-600 text-[11px] font-bold uppercase tracking-wider mb-1">Registration State:</p><p className="text-xl font-bold italic">{selectedState || 'Not selected'}</p></div>
                   <button onClick={() => goToStep(4)} className="w-10 h-10 rounded-xl bg-zinc-800/50 flex items-center justify-center text-zinc-400"><Pencil size={18} /></button>
                 </div>
                 <div className="bg-[#11111d] border border-zinc-800/50 p-6 rounded-[24px] flex justify-between items-center">
-                  <div><p className="text-zinc-600 text-[11px] font-bold uppercase tracking-wider mb-1">LLC Package</p><p className="text-xl font-bold italic">{selectedPackage}</p></div>
+                  <div><p className="text-zinc-600 text-[11px] font-bold uppercase tracking-wider mb-1">LLC Package</p><p className="text-xl font-bold italic">{selectedPackage || 'Not selected'}</p></div>
                   <div className="flex items-center gap-4">
                     <p className="text-2xl font-bold italic">
-                      ${selectedPackage === 'Premium+' ? 850 : 1495}
+                      ${packagePrice}
                       <span className="text-xs text-zinc-500 not-italic font-medium ml-1">/once</span>
                     </p>
                     <button onClick={() => goToStep(5)} className="w-10 h-10 rounded-xl bg-zinc-800/50 flex items-center justify-center text-zinc-400"><Pencil size={18} /></button>
                   </div>
                 </div>
                 <div className="bg-[#11111d] border border-zinc-800/50 p-6 rounded-[24px] flex justify-between items-center">
-                  <div><p className="text-xl font-bold italic">U.S. Virtual Address</p></div>
-                  <div className="flex items-center gap-4">
-                    <p className="text-2xl font-bold italic">
-                      ${selectedAddress === 'commercial' ? (isYearly ? 372 : 31) : (isYearly ? 1524 : 127)}
-                      {isYearly ? '' : '/mo'}
+                  <div>
+                    <p className="text-zinc-600 text-[11px] font-bold uppercase tracking-wider mb-1">Address Configuration</p>
+                    <p className="text-xl font-bold italic">
+                      {selectedAddress === 'commercial' ? 'Commercial' : selectedAddress === 'residential' ? 'Residential' : selectedAddress === 'own-setup' ? 'Own Setup' : 'Not selected'}
                     </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold italic">
+                        ${addressPrice}
+                      </p>
+                      {selectedAddress === 'commercial' || selectedAddress === 'residential' ? (
+                        <p className="text-xs text-zinc-500">{isYearly ? '/year' : '/month'}</p>
+                      ) : selectedAddress === 'own-setup' ? (
+                        <p className="text-xs text-zinc-500">self-managed</p>
+                      ) : null}
+                    </div>
                     <button onClick={() => goToStep(6)} className="w-10 h-10 rounded-xl bg-zinc-800/50 flex items-center justify-center text-zinc-400"><Pencil size={18} /></button>
                   </div>
                 </div>
@@ -634,7 +670,7 @@ export default function ReadyLaunchApp() {
                   <div><p className="text-xl font-bold italic">Total</p></div>
                   <div className="flex items-center gap-4">
                     <p className="text-2xl font-bold italic">
-                      ${((selectedPackage === 'Premium+' ? 850 : 1495) + (selectedAddress === 'commercial' ? (isYearly ? 372 : 31) : (isYearly ? 1524 : 127))).toLocaleString()}
+                      ${totalPrice.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -649,9 +685,6 @@ export default function ReadyLaunchApp() {
                   setCheckoutAuthMessage('');
                   setIsLoadingCheckout(true);
                   try {
-                    const packagePrice = selectedPackage === 'Premium+' ? 850 : 1495;
-                    const addressPrice = selectedAddress === 'commercial' ? (isYearly ? 372 : 31) : (isYearly ? 1524 : 127);
-                    const totalPrice = packagePrice + addressPrice;
                     console.log(`Preparing checkout: ${selectedPackage} ($${packagePrice}) + ${selectedAddress} ($${addressPrice}) = $${totalPrice}`);
 
                     // expose the total so the embed UI can display it if needed
@@ -753,9 +786,9 @@ export default function ReadyLaunchApp() {
         </div>
 
         {/* NAVEGACIÓN INFERIOR */}
-        <div className="mt-auto flex justify-between items-center pt-8">
+        <div className="mt-auto flex justify-end items-center gap-3 pt-8">
           <button onClick={back} className="w-12 h-12 rounded-full bg-zinc-800/40 flex items-center justify-center text-zinc-500 hover:text-white transition-all active:scale-90"><ChevronRight className="rotate-180" size={24} /></button>
-          {step < 7 && <button onClick={next} className="bg-white text-black px-12 py-4 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl">Next Step <ChevronRight size={18} /></button>}
+          {step < 7 && <button onClick={next} disabled={!canProceedToNextStep} className="bg-white text-black px-12 py-4 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">Next Step <ChevronRight size={18} /></button>}
         </div>
       </div>
     </div>
