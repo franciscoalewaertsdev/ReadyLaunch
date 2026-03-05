@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering since this page depends on URL params
@@ -19,7 +19,7 @@ interface WhopTokens {
   obtained_at: number;
 }
 
-export default function AuthProcessPage() {
+function AuthProcessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -142,5 +142,22 @@ export default function AuthProcessPage() {
     <div className="min-h-screen bg-[#0e0718] flex items-center justify-center">
       <p className="text-white">Redirecting...</p>
     </div>
+  );
+}
+
+export default function AuthProcessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0e0718] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block mb-4">
+            <div className="w-12 h-12 border-4 border-[#a5b4fc] border-t-[#f59e0b] rounded-full animate-spin" />
+          </div>
+          <p className="text-white text-lg font-medium">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AuthProcessContent />
+    </Suspense>
   );
 }
