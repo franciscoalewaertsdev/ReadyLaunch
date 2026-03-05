@@ -24,7 +24,12 @@ export async function POST(request: Request) {
     const envClientId = process.env.WHOP_CLIENT_ID || process.env.NEXT_PUBLIC_WHOP_CLIENT_ID;
     const resolvedClientId = envClientId || clientId;
     const clientSecret = process.env.WHOP_OAUTH_CLIENT_SECRET || process.env.WHOP_CLIENT_SECRET;
-    const resolvedRedirectUri = process.env.WHOP_REDIRECT_URI || process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI || redirectUri || 'http://localhost:3000/api/auth/callback';
+    const requestOrigin = new URL(request.url).origin;
+    const resolvedRedirectUri =
+      process.env.WHOP_REDIRECT_URI ||
+      process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI ||
+      redirectUri ||
+      `${requestOrigin}/api/auth/callback`;
 
     if (!resolvedClientId) {
       console.error('[Auth Process Token] Missing OAuth client_id in environment');

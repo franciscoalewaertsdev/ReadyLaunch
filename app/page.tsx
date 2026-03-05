@@ -39,7 +39,6 @@ export default function ReadyLaunchApp() {
   // PKCE + OAuth 2.1 helpers (from Whop docs)
   const STORAGE_KEY = 'whop_oauth_pkce';
   const CLIENT_ID = process.env.NEXT_PUBLIC_WHOP_CLIENT_ID;
-  const REDIRECT_URI = process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI || 'http://localhost:3000/api/auth/callback';
   const SCOPES = 'openid profile email';
 
   function base64url(bytes: Uint8Array): string {
@@ -60,6 +59,10 @@ export default function ReadyLaunchApp() {
       return;
     }
 
+    const redirectUri =
+      process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI ||
+      `${window.location.origin}/api/auth/callback`;
+
     const pkce = {
       codeVerifier: randomString(32),
       state: randomString(16),
@@ -72,7 +75,7 @@ export default function ReadyLaunchApp() {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       scope: SCOPES,
       state: pkce.state,
       nonce: pkce.nonce,
