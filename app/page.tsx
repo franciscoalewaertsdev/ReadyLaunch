@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Check, ChevronRight, Lightbulb, X, Rocket, Crown, Pencil, Mail, User } from 'lucide-react';
 import { WhopCheckoutEmbed } from '@whop/checkout/react';
 
@@ -13,11 +13,14 @@ export default function ReadyLaunchApp() {
   const [selectedState, setSelectedState] = useState('Wyoming');
   const [selectedPackage, setSelectedPackage] = useState('Credit Accelerator');
   const [companyName, setCompanyName] = useState('Readylaunch LLC');
-  const [selectedCountry, setSelectedCountry] = useState('Argentina');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
   const [checkoutTotal, setCheckoutTotal] = useState<number>(0);
   const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
+  const [checkoutAuthMessage, setCheckoutAuthMessage] = useState('');
+  const countryDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // --- LÓGICA DE WHOP ---
   const [userName, setUserName] = useState<string | null>(null);
@@ -36,10 +39,51 @@ export default function ReadyLaunchApp() {
     }
   }, []);
 
+  useEffect(() => {
+    if (userName) {
+      setCheckoutAuthMessage('');
+    }
+  }, [userName]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // PKCE + OAuth 2.1 helpers (from Whop docs)
   const STORAGE_KEY = 'whop_oauth_pkce';
   const CLIENT_ID = process.env.NEXT_PUBLIC_WHOP_CLIENT_ID;
   const SCOPES = 'openid profile email';
+
+  const countryOptions = useMemo(() => {
+    const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const names: string[] = [];
+
+    for (let first = 65; first <= 90; first++) {
+      for (let second = 65; second <= 90; second++) {
+        const code = String.fromCharCode(first, second);
+        const name = displayNames.of(code);
+
+        if (!name || name === code) {
+          continue;
+        }
+
+        names.push(name);
+      }
+    }
+
+    return Array.from(new Set(names))
+      .filter((name) => !name.toLowerCase().includes('outlying'))
+      .sort((a, b) => a.localeCompare(b));
+  }, []);
 
   function base64url(bytes: Uint8Array): string {
     return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' })[c]!);
@@ -94,6 +138,10 @@ export default function ReadyLaunchApp() {
   };
   const goToStep = (s: number) => setStep(s);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   // --- COMPONENTE: BOTÓN DE AUTH ---
   const AuthButton = () => {
     const handleLogout = async () => {
@@ -130,7 +178,7 @@ export default function ReadyLaunchApp() {
         onClick={startWhopOAuth}
         className="bg-[#ff385c] hover:bg-[#ff4d6d] text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2 active:scale-95"
       >
-        <img src="https://whop.com/favicon.ico" className="w-4 h-4 brightness-0 invert" alt="whop" />
+        <img src="/media/whopLogo.png" className="w-6 h-6 object-contain" alt="whop" />
         Log in with Whop
       </button>
     );
@@ -183,13 +231,16 @@ export default function ReadyLaunchApp() {
   // --- STEP 0: HOME ---
   if (step === 0) return (
     <div className="min-h-screen bg-[#0e0718] flex flex-col lg:flex-row font-sans text-white overflow-hidden relative">
-      <div className="absolute top-10 right-10 z-50 flex items-center gap-3">
-        <AuthButton />
-        <button onClick={() => setIsHelpOpen(true)} className="border border-zinc-800 px-5 py-2 rounded-xl text-xs font-bold text-zinc-400">Need Help?</button>
+      <div className="absolute top-10 left-10 right-10 z-50 flex items-center justify-between gap-4">
+        <Logo />
+        <div className="flex items-center gap-3">
+          <AuthButton />
+          <button onClick={() => setIsHelpOpen(true)} className="border border-zinc-800 px-5 py-2 rounded-xl text-xs font-bold text-zinc-400">Need Help?</button>
+        </div>
       </div>
       <div className="lg:w-[38%] p-10 lg:p-20 flex flex-col justify-between relative border-r border-zinc-900/50">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 to-transparent blur-3xl pointer-events-none" />
-        <div className="relative z-10"><Logo /></div>
+        <div className="relative z-10 h-8" />
         <div className="relative z-10">
           <h1 className="text-5xl lg:text-6xl font-bold mb-8 leading-[1.1] tracking-tight italic">All-In-One <br/><span className="text-[#a5b4fc] border-b-4 border-indigo-500/20">LLC Platform</span></h1>
           <p className="text-zinc-500 text-lg leading-relaxed max-w-sm font-medium">ReadyLaunch is an all-in-one solution to setup and manage your LLC business in the US. Everything from LLC incorporation to tax ID and bank account, then accounting, compliance and tax filing in one platform.</p>
@@ -259,19 +310,48 @@ export default function ReadyLaunchApp() {
           <StepTracker current={step} />
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center w-full animate-in fade-in duration-500 pb-12">
+        <div key={step} className="flex-1 flex flex-col items-center justify-center w-full animate-in fade-in duration-500 pb-12">
           
           {/* STEP 2: LOCATION */}
           {step === 2 && (
             <div className="max-w-2xl w-full flex flex-col items-center">
               <h2 className="text-[40px] font-medium mb-12 text-center italic tracking-tight leading-tight">Which country do you <br/> reside in? 🌎</h2>
-              <div className="w-full max-w-md relative mb-8">
-                <select value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)} className="w-full bg-[#0c0c14] border border-zinc-800 p-5 rounded-2xl appearance-none text-zinc-400 font-medium outline-none cursor-pointer">
-                  <option>Select country of residence</option>
-                  <option>Argentina</option>
-                  <option>Spain</option>
-                </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600"><ChevronRight size={20} className="rotate-90" /></div>
+              <div ref={countryDropdownRef} className="w-full max-w-md relative mb-8">
+                <button
+                  type="button"
+                  onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                  className="w-full bg-[#0c0c14] border border-zinc-800 p-5 rounded-2xl text-left font-medium outline-none cursor-pointer hover:border-zinc-700 transition-colors flex items-center justify-between"
+                >
+                  <span className={selectedCountry ? 'text-zinc-200' : 'text-zinc-400'}>
+                    {selectedCountry || 'Select country of residence'}
+                  </span>
+                  <ChevronRight
+                    size={20}
+                    className={`text-zinc-600 transition-transform ${isCountryDropdownOpen ? 'rotate-90' : '-rotate-90'}`}
+                  />
+                </button>
+
+                {isCountryDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-3 bg-[#0c0c14] border border-zinc-800 rounded-2xl max-h-64 overflow-y-auto z-30 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+                    {countryOptions.map((country) => (
+                      <button
+                        key={country}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCountry(country);
+                          setIsCountryDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-5 py-3 text-sm transition-colors border-b border-zinc-800/50 last:border-b-0 ${
+                          selectedCountry === country
+                            ? 'bg-[#1e1e35]/50 text-white'
+                            : 'text-zinc-300 hover:bg-zinc-800/40'
+                        }`}
+                      >
+                        {country}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="w-full max-w-md bg-[#0c0c14]/50 border border-zinc-800/60 p-6 rounded-[28px] flex gap-4 items-start">
                 <Lightbulb className="text-zinc-600 mt-1 shrink-0" size={18} />
@@ -311,7 +391,7 @@ export default function ReadyLaunchApp() {
                         <h3 className="text-xl font-bold mb-3 italic tracking-tight">{state.id}</h3>
                         <p className="text-zinc-500 text-[13.5px] leading-relaxed font-medium">{state.desc}</p>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${selectedState === state.id ? 'border-indigo-500' : 'border-zinc-700'}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${state.tag ? 'mt-10' : 'mt-1'} ${selectedState === state.id ? 'border-indigo-500' : 'border-zinc-700'}`}>
                         {selectedState === state.id && <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_8px_white]" />}
                       </div>
                     </div>
@@ -561,6 +641,12 @@ export default function ReadyLaunchApp() {
               </div>
               <button
                 onClick={async () => {
+                  if (!userName) {
+                    setCheckoutAuthMessage('You must log in with Whop to complete the payment.');
+                    return;
+                  }
+
+                  setCheckoutAuthMessage('');
                   setIsLoadingCheckout(true);
                   try {
                     const packagePrice = selectedPackage === 'Premium+' ? 850 : 1495;
@@ -608,12 +694,26 @@ export default function ReadyLaunchApp() {
                 {isLoadingCheckout ? 'Creating checkout...' : checkoutSessionId ? 'Checkout ready' : 'Proceed to payment'}
               </button>
 
+              {checkoutAuthMessage && (
+                <p className="mt-3 text-center text-sm font-medium text-red-400">
+                  {checkoutAuthMessage}
+                </p>
+              )}
+
               {checkoutSessionId && (
                 <>
                   <div className="mt-8 w-full max-w-lg">
                     <p className="text-center text-lg mb-4">Total price: ${checkoutTotal.toFixed(2)}</p>
                     <button
-                      onClick={() => setIsCheckoutVisible(true)}
+                      onClick={() => {
+                        if (!userName) {
+                          setCheckoutAuthMessage('You must log in with Whop to complete the payment.');
+                          return;
+                        }
+
+                        setCheckoutAuthMessage('');
+                        setIsCheckoutVisible(true);
+                      }}
                       className="mb-4 px-6 py-3 bg-[#2a2a3d] text-white rounded-xl font-bold"
                     >
                       {isCheckoutVisible ? 'Checkout open' : 'Open checkout'}
